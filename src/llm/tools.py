@@ -1,27 +1,34 @@
 TOOLS = [
     {
-        "name": "query_students",
-        "description": "Find students based on GPA or name",
+        "name": "query_applicants",
+        "description": "Find applicants based on GPA, name, or status",
         "parameters": {
             "min_gpa": "number",
             "max_gpa": "number",
-            "student_name": "string"
+            "applicant_name": "string",
+            "admissions_status": "string"
         }
     },
     {
-        "name": "query_courses",
-        "description": "Find course records",
+        "name": "get_application_details",
+        "description": "Get full application details for a user",
         "parameters": {
-            "course_name": "string",
-            "semester": "string",
-            "grade_below": "string"
+            "user_id": "number"
         }
     },
     {
-        "name": "get_transcript",
-        "description": "Get full transcript for a student",
+        "name": "check_missing_items",
+        "description": "Find applications with missing required items",
         "parameters": {
-            "student_id": "string"
+            "app_id": "number"
+        }
+    },
+    {
+        "name": "query_documents",
+        "description": "Check document submission status",
+        "parameters": {
+            "app_id": "number",
+            "status": "string"
         }
     }
 ]
