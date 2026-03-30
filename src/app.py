@@ -1,8 +1,11 @@
 import os
 import json
 import shutil
+
 from pdf_ingest import parse_application_pdf
 from db import get_connection, insert_application
+from mcp_server import execute_query
+from llm.service import generate_tool_call
 
 
 def ensure_directory(path: str) -> None:
@@ -60,7 +63,33 @@ def main():
         menu_choice = input("(1) Ask a question\n(2) Upload PDFs\n(3) Exit\n").strip()
 
         if menu_choice == "1":
-            print("Question answering is not connected yet.")
+            user_query = input("Enter your question: ").strip()
+
+            if not user_query:
+                print("Error: Question cannot be empty.")
+                continue
+
+            conn = None
+
+            try:
+                tool_call = generate_tool_call(user_query)
+
+                conn = get_connection(db_path)
+                result = execute_query(conn, tool_call)
+
+                print("\nGenerated tool call:")
+                print(json.dumps(tool_call, indent=2))
+
+                print("\nQuery result:")
+                print(json.dumps(result, indent=2))
+
+            except Exception as e:
+                print(f"Error while answering question: {e}")
+
+            finally:
+                if conn:
+                    conn.close()
+
             continue
 
         elif menu_choice == "2":
@@ -86,11 +115,10 @@ def main():
 
                 staged_json_path = stage_parsed_data(project_root, pdf_path, parsed_data)
                 print("Data has been staged")
-                # Insert into DB
+
                 conn = get_connection(db_path)
                 insert_application(conn, parsed_data)
 
-                # Move staged file to processed after successful insert
                 processed_path = move_staged_file(project_root, staged_json_path, "processed")
 
                 print("\nData inserted into database successfully.")

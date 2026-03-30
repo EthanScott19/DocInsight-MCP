@@ -3,3 +3,5 @@ failed/*
 processed/*
 src/docinsight.db
 src/__pycache__/*
+src/llm/__pycache__/*
+.gitignore.save
