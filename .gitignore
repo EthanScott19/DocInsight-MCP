@@ -1,1 +1,5 @@
 .DS_Store
+failed/*
+processed/*
+src/docinsight.db
+src/__pycache__/*
