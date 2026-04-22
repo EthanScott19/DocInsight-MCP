@@ -346,3 +346,146 @@ def get_applications_by_admission_note(conn: sqlite3.Connection, admission_note:
     """, (admission_note,))
     rows = cursor.fetchall()
     return [dict(row) for row in rows]
+
+def count_all_applications(conn: sqlite3.Connection) -> int:
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) AS total FROM Applications")
+    row = cursor.fetchone()
+    return row["total"]
+
+
+def count_applications_by_admission_note(conn: sqlite3.Connection, admission_note: str) -> int:
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT COUNT(*) AS total
+        FROM Applications a
+        JOIN AdmissionNotes n ON a.adID = n.adID
+        WHERE n.adNote = ?
+    """, (admission_note,))
+    row = cursor.fetchone()
+    return row["total"]
+
+
+def count_applications_by_degree(conn: sqlite3.Connection, degree_code: str) -> int:
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT COUNT(*) AS total
+        FROM Applications a
+        JOIN Degrees d ON a.dID = d.dID
+        WHERE d.dNm = ?
+    """, (degree_code,))
+    row = cursor.fetchone()
+    return row["total"]
+
+
+def filter_applications(
+        conn: sqlite3.Connection,
+        degree_code: Optional[str] = None,
+        admission_note: Optional[str] = None,
+        min_gpa: Optional[float] = None,
+        max_gpa: Optional[float] = None,
+        student_type: Optional[str] = None,
+        term: Optional[str] = None,
+) -> list[dict]:
+    cursor = conn.cursor()
+
+    query = """
+        SELECT
+            a.appID,
+            u.applicantName,
+            u.MUID,
+            u.GPA,
+            d.dNm AS degreeCode,
+            n.adNote AS admissionNote,
+            a.term,
+            a.admissionsStatus,
+            a.studentType,
+            a.decisionReason
+        FROM Applications a
+        JOIN Users u ON a.uID = u.UID
+        JOIN Degrees d ON a.dID = d.dID
+        JOIN AdmissionNotes n ON a.adID = n.adID
+        WHERE 1=1
+    """
+
+    params = []
+
+    if degree_code is not None:
+        query += " AND d.dNm = ?"
+        params.append(degree_code)
+
+    if admission_note is not None:
+        query += " AND n.adNote = ?"
+        params.append(admission_note)
+
+    if min_gpa is not None:
+        query += " AND u.GPA >= ?"
+        params.append(min_gpa)
+
+    if max_gpa is not None:
+        query += " AND u.GPA <= ?"
+        params.append(max_gpa)
+
+    if student_type is not None:
+        query += " AND a.studentType = ?"
+        params.append(student_type)
+
+    if term is not None:
+        query += " AND a.term = ?"
+        params.append(term)
+
+    query += " ORDER BY a.appID"
+
+    cursor.execute(query, params)
+    rows = cursor.fetchall()
+    return [dict(row) for row in rows]
+
+def count_filtered_applications(
+        conn: sqlite3.Connection,
+        degree_code: Optional[str] = None,
+        admission_note: Optional[str] = None,
+        min_gpa: Optional[float] = None,
+        max_gpa: Optional[float] = None,
+        student_type: Optional[str] = None,
+        term: Optional[str] = None,
+) -> int:
+    cursor = conn.cursor()
+
+    query = """
+        SELECT COUNT(*) AS total
+        FROM Applications a
+        JOIN Users u ON a.uID = u.UID
+        JOIN Degrees d ON a.dID = d.dID
+        JOIN AdmissionNotes n ON a.adID = n.adID
+        WHERE 1=1
+    """
+
+    params = []
+
+    if degree_code is not None:
+        query += " AND d.dNm = ?"
+        params.append(degree_code)
+
+    if admission_note is not None:
+        query += " AND n.adNote = ?"
+        params.append(admission_note)
+
+    if min_gpa is not None:
+        query += " AND u.GPA >= ?"
+        params.append(min_gpa)
+
+    if max_gpa is not None:
+        query += " AND u.GPA <= ?"
+        params.append(max_gpa)
+
+    if student_type is not None:
+        query += " AND a.studentType = ?"
+        params.append(student_type)
+
+    if term is not None:
+        query += " AND a.term = ?"
+        params.append(term)
+
+    cursor.execute(query, params)
+    row = cursor.fetchone()
+    return row["total"]

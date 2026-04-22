@@ -1,4 +1,4 @@
-from mcp_schema import get_tool_names, get_tool_schema
+from mcp_schema import get_tool_names, get_tool_schema, get_required_arguments
 
 
 def validate_tool_call(tool_call: dict) -> None:
@@ -18,6 +18,7 @@ def validate_tool_call(tool_call: dict) -> None:
 
     schema = get_tool_schema(tool_name)
     allowed_args = set(schema["parameters"].keys())
+    required_args = set(get_required_arguments(tool_name))
     provided_args = set(tool_call["arguments"].keys())
 
     invalid_args = provided_args - allowed_args
@@ -26,7 +27,7 @@ def validate_tool_call(tool_call: dict) -> None:
             f"Invalid argument(s) for {tool_name}: {', '.join(sorted(invalid_args))}"
         )
 
-    missing_args = allowed_args - provided_args
+    missing_args = required_args - provided_args
     if missing_args:
         raise ValueError(
             f"Missing required argument(s) for {tool_name}: {', '.join(sorted(missing_args))}"
