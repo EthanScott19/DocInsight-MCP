@@ -6,7 +6,56 @@ from pdf_ingest import parse_application_pdf
 from db import get_connection, insert_application
 from mcp_server import execute_query
 from llm.service import generate_tool_call
+DEV_MODE = False
 
+def format_user_output(result):
+    if result is None:
+        return "No matching result found."
+
+    if isinstance(result, list):
+        if not result:
+            return "No matching results found."
+
+        lines = []
+        for item in result:
+            if isinstance(item, dict):
+                name = item.get("applicantName") or item.get("courseTitle") or str(item)
+
+                details = []
+                for key in ["degreeCode", "admissionNote", "term", "GPA", "grade"]:
+                    if key in item and item[key] is not None:
+                        details.append(f"{key}: {item[key]}")
+
+                if details:
+                    lines.append(f"- {name} ({', '.join(details)})")
+                else:
+                    lines.append(f"- {name}")
+            else:
+                lines.append(f"- {item}")
+
+        return "\n".join(lines)
+
+    if isinstance(result, dict):
+        lines = []
+
+        for key, value in result.items():
+            if isinstance(value, list):
+                lines.append(f"\n{key}:")
+                if not value:
+                    lines.append("  None")
+                else:
+                    for item in value:
+                        lines.append(f"  - {item}")
+            elif isinstance(value, dict):
+                lines.append(f"\n{key}:")
+                for sub_key, sub_value in value.items():
+                    lines.append(f"  {sub_key}: {sub_value}")
+            else:
+                lines.append(f"{key}: {value}")
+
+        return "\n".join(lines)
+
+    return str(result)
 
 def ensure_directory(path: str) -> None:
     os.makedirs(path, exist_ok=True)
@@ -292,11 +341,16 @@ def main():
                 conn = get_connection(db_path)
                 result = execute_query(conn, tool_call)
 
-                print("\nGenerated tool call:")
-                print(json.dumps(tool_call, indent=2))
+                if DEV_MODE:
+                    print("\nGenerated tool call:")
+                    print(json.dumps(tool_call, indent=2))
 
-                print("\nQuery result:")
-                print(json.dumps(result, indent=2))
+                    print("\nQuery result:")
+                    print(json.dumps(result, indent=2))
+                else:
+                    print("\nAnswer:")
+                    print(format_user_output(result))
+                    print()
 
             except Exception as e:
                 print(f"Error while answering question: {e}")
