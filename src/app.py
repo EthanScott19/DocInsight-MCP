@@ -6,7 +6,7 @@ from pdf_ingest import parse_application_pdf
 from db import get_connection, insert_application
 from mcp_server import execute_query
 from llm.service import generate_tool_call
-DEV_MODE = False
+DEV_MODE = True
 
 def format_user_output(result):
     if result is None:

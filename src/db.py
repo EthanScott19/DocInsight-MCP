@@ -18,7 +18,7 @@ def create_tables(conn: sqlite3.Connection) -> None:
         applicantName TEXT,
         MUID TEXT,
         GPA REAL,
-        gender INTEGER,
+        gender TEXT,
         emailAddress TEXT,
         physAddress TEXT
     );
@@ -63,6 +63,18 @@ def create_tables(conn: sqlite3.Connection) -> None:
         appID INTEGER NOT NULL,
         itemName TEXT NOT NULL,
         FOREIGN KEY (appID) REFERENCES Applications(appID)
+    );
+    CREATE TABLE IF NOT EXISTS ApplicantCourses (
+        courseID INTEGER PRIMARY KEY AUTOINCREMENT,
+        appID INTEGER NOT NULL,
+        term TEXT,
+        subject TEXT,
+        courseNumber TEXT,
+        courseTitle TEXT,
+        creditHours REAL,
+        grade TEXT,
+        qualityPoints REAL,
+        FOREIGN KEY(appID) REFERENCES Applications(appID)
     );
     """)
 
@@ -221,6 +233,29 @@ def insert_application(conn: sqlite3.Connection, data: Dict[str, Any]) -> None:
                 doc.get("status"),
                 doc.get("date_received"),
             ))
+        for course in data.get("courses", []):
+            cursor.execute("""
+                INSERT INTO ApplicantCourses (
+                    appID,
+                    term,
+                    subject,
+                    courseNumber,
+                    courseTitle,
+                    creditHours,
+                    grade,
+                    qualityPoints
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+            app_id,
+            course.get("term"),
+            course.get("subject"),
+            course.get("course_number"),
+            course.get("course_title"),
+            course.get("credit_hours"),
+            course.get("grade"),
+            course.get("quality_points"),
+        ))
 
         conn.commit()
 
